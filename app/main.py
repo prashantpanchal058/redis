@@ -1,33 +1,19 @@
 from fastapi import FastAPI, HTTPException
-from celery import Celery
-from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+from .tasks import schedule_task
+from celery.result import AsyncResult
+import os
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or specify your frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Celery Configuration
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-
-# Create Celery instance
-celery = Celery(
-    "tasks",
-    broker=CELERY_BROKER_URL,
-    backend=CELERY_RESULT_BACKEND
-)
-
-
-@celery.task
-def schedule_task(task_id: int, message: str):
-    pass
 
 
 @app.post("/schedule-task/{task_id}")
@@ -36,18 +22,28 @@ async def schedule_task_api(
     message: str,
     execute_at: datetime
 ):
-    print(datetime.utcnow())
     if execute_at <= datetime.utcnow():
         raise HTTPException(
             status_code=400,
             detail="Invalid execution time, please choose any future time"
         )
 
-    schedule_task.apply_async(
+    task = schedule_task.apply_async(
         args=[task_id, message],
         eta=execute_at
     )
 
     return {
-        "message": f"task {task_id} scheduled for execution at {execute_at}"
+        "task_id": task.id,
+        "message": f"Task {task_id} scheduled for execution at {execute_at}"
+    }
+
+
+@app.get("/task-status/{task_id}")
+async def get_task_status(task_id: str):
+    result = AsyncResult(task_id)
+    return {
+        "task_id": task_id,
+        "status": result.status,
+        "result": result.result
     }
