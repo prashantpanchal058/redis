@@ -1,24 +1,17 @@
-# from fastapi import FastAPI
-# from .tasks import sample_task
-# from celery.result import AsyncResult
-
-# app = FastAPI()
-
-# @app.post("/run-task")
-# def run_task(seconds: int = 5):
-#     task = sample_task.delay(seconds)
-#     return {"task_id": task.id}
-
-# @app.get("/task/{task_id}")
-# def get_task(task_id: str):
-#     result = AsyncResult(task_id)
-#     return {"status": result.status, "result": result.result}
-
 from fastapi import FastAPI, HTTPException
 from celery import Celery
 from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Celery Configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
