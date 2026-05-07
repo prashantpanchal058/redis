@@ -7,7 +7,7 @@ services:
     envVars:
       - key: REDIS_URL
         fromService:
-          name: redis
+          name: my-redis
           type: redis
           property: connectionString
     healthCheckPath: /docs
@@ -21,13 +21,13 @@ services:
     envVars:
       - key: REDIS_URL
         fromService:
-          name: redis
+          name: my-redis
           type: redis
           property: connectionString
 
   # 3. Redis (Managed by Render)
   - type: redis
-    name: redis
+    name: my-redis
     plan: free       # or "starter" for production
     ipAllowList: []  # only internal access
 
